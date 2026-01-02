@@ -1,0 +1,138 @@
+{
+    "type": "FeatureCollection",
+    "metadata": {
+        "resortId": "mont_tremblant",
+        "resortName": "Mont Tremblant",
+        "latitude": 46.2089,
+        "longitude": -74.5920,
+        "country": "Canada",
+        "region": "Quebec",
+        "maxElevation": 875,
+        "minElevation": 265
+    },
+    "features": [
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -74.592,
+                        46.208
+                    ],
+                    [
+                        -74.5915,
+                        46.2075
+                    ],
+                    [
+                        -74.591,
+                        46.207
+                    ],
+                    [
+                        -74.5905,
+                        46.2065
+                    ]
+                ]
+            },
+            "properties": {
+                "id": "tremblant_nansen",
+                "name": "Nansen",
+                "piste:type": "downhill",
+                "piste:difficulty": "intermediate",
+                "piste:grooming": "classic"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -74.593,
+                        46.209
+                    ],
+                    [
+                        -74.5925,
+                        46.2085
+                    ],
+                    [
+                        -74.592,
+                        46.208
+                    ]
+                ]
+            },
+            "properties": {
+                "id": "tremblant_flying_mile",
+                "name": "Flying Mile",
+                "piste:type": "downhill",
+                "piste:difficulty": "easy",
+                "piste:grooming": "classic"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -74.594,
+                        46.210
+                    ],
+                    [
+                        -74.5935,
+                        46.2095
+                    ],
+                    [
+                        -74.593,
+                        46.209
+                    ],
+                    [
+                        -74.5925,
+                        46.2085
+                    ]
+                ]
+            },
+            "properties": {
+                "id": "tremblant_dynamite",
+                "name": "Dynamite",
+                "piste:type": "downhill",
+                "piste:difficulty": "advanced",
+                "piste:grooming": "classic"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -74.5905,
+                        46.2065
+                    ],
+                    [
+                        -74.591,
+                        46.207
+                    ],
+                    [
+                        -74.592,
+                        46.208
+                    ],
+                    [
+                        -74.593,
+                        46.209
+                    ],
+                    [
+                        -74.594,
+                        46.210
+                    ]
+                ]
+            },
+            "properties": {
+                "id": "tremblant_gondola",
+                "name": "Gondola",
+                "aerialway": "gondola",
+                "piste:type": null
+            }
+        }
+    ]
+}
