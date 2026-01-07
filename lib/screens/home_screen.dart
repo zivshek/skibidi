@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:skibidi/core/interfaces/i_trail_data_repository.dart';
+import 'package:skibidi/services/database_service.dart';
 import 'package:skibidi/models/resort.dart';
 import 'package:skibidi/screens/active_session_screen.dart';
 import 'package:skibidi/screens/session_history_screen.dart';
@@ -46,6 +47,17 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context) => ActiveSessionScreen(resort: _selectedResort!),
       ),
     );
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    } else {
+      return '${minutes}m';
+    }
   }
 
   @override
@@ -209,60 +221,82 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         const SizedBox(height: 32),
 
-                        // Quick Stats (placeholder - last session)
-                        Text(
-                          'Last Session',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Row(
-                          children: [
-                            Expanded(
-                              child: StatCard(
-                                icon: Icons.arrow_downward,
-                                label: 'Vertical',
-                                value: '3,450',
-                                unit: 'm',
-                                color: Colors.blue,
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: StatCard(
-                                icon: Icons.speed,
-                                label: 'Max Speed',
-                                value: '62.4',
-                                unit: 'km/h',
-                                color: Colors.orange,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        const Row(
-                          children: [
-                            Expanded(
-                              child: StatCard(
-                                icon: Icons.route,
-                                label: 'Runs',
-                                value: '12',
-                                unit: '',
-                                color: Colors.green,
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: StatCard(
-                                icon: Icons.timer,
-                                label: 'Duration',
-                                value: '4h 23m',
-                                unit: '',
-                                color: Colors.purple,
-                              ),
-                            ),
-                          ],
+                        // Quick Stats (last  session from database)
+                        FutureBuilder(
+                          future: GetIt.I<DatabaseService>().getAllSessions(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+
+                            final lastSession = snapshot.data!.first;
+                            final stats = lastSession.stats;
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Last Session',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: StatCard(
+                                        icon: Icons.arrow_downward,
+                                        label: 'Vertical',
+                                        value: stats.totalVertical
+                                            .toStringAsFixed(0),
+                                        unit: 'm',
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: StatCard(
+                                        icon: Icons.speed,
+                                        label: 'Max Speed',
+                                        value: stats.maxSpeed.toStringAsFixed(
+                                          1,
+                                        ),
+                                        unit: 'km/h',
+                                        color: Colors.orange,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: StatCard(
+                                        icon: Icons.route,
+                                        label: 'Runs',
+                                        value: stats.totalRuns.toString(),
+                                        unit: '',
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: StatCard(
+                                        icon: Icons.timer,
+                                        label: 'Duration',
+                                        value: _formatDuration(
+                                          lastSession.duration,
+                                        ),
+                                        unit: '',
+                                        color: Colors.purple,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ]),
                     ),

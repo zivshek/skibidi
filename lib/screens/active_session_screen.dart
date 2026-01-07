@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:uuid/uuid.dart';
+import 'package:skibidi/core/interfaces/i_location_service.dart';
 import 'package:skibidi/models/resort.dart';
 import 'package:skibidi/models/ski_session.dart';
 import 'package:skibidi/models/session_statistics.dart';
@@ -18,16 +20,23 @@ class ActiveSessionScreen extends StatefulWidget {
 
 class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
   late SkiSession _session;
-  Timer? _timer;
+  final _locationService = GetIt.I<ILocationService>();
+
+  Timer? _uiUpdateTimer;
+  StreamSubscription? _locationSubscription;
+
   Duration _elapsed = Duration.zero;
   bool _isPaused = false;
 
-  // Mock stats that would come from session tracker
+  // Real-time tracking stats
   int _runs = 0;
   double _vertical = 0;
   double _distance = 0;
   double _maxSpeed = 0;
-  String _currentTrail = 'Not on trail';
+  double _currentSpeed = 0;
+  double _currentAltitude = 0;
+  String _currentTrail = 'Detecting trail...';
+  bool _isOnLift = false;
 
   @override
   void initState() {
@@ -36,21 +45,53 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
       id: const Uuid().v4(),
       resortId: widget.resort.id,
     );
-    _startTimer();
+    _startTracking();
   }
 
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+  Future<void> _startTracking() async {
+    // Request permissions and start GPS tracking
+    final hasPermission = await _locationService.requestPermissions();
+    if (!hasPermission) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permission required')),
+        );
+      }
+      return;
+    }
+
+    await _locationService.startTracking();
+
+    // Listen to location updates
+    _locationSubscription = _locationService.locationStream.listen((location) {
+      setState(() {
+        _currentSpeed = location.speed ?? 0;
+        _currentAltitude = location.altitude ?? 0;
+
+        // Update max speed
+        if (_currentSpeed > _maxSpeed) {
+          _maxSpeed = _currentSpeed;
+        }
+
+        // Detect if on lift (speed > 15 km/h and ascending)
+        _isOnLift = _currentSpeed > 15 && _currentSpeed < 25;
+
+        // Update trail name based on activity
+        if (_isOnLift) {
+          _currentTrail = 'On Gondola';
+        } else if (_currentSpeed > 10) {
+          _currentTrail = 'Skiing';
+        } else {
+          _currentTrail = 'Stationary';
+        }
+      });
+    });
+
+    // UI update timer for elapsed time
+    _uiUpdateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!_isPaused) {
         setState(() {
           _elapsed = DateTime.now().difference(_session.startTime);
-          // Mock data updates
-          if (_elapsed.inSeconds % 10 == 0) {
-            _runs++;
-            _vertical += 150;
-            _distance += 500;
-            _maxSpeed = (_maxSpeed + 5).clamp(0, 70);
-          }
         });
       }
     });
@@ -58,19 +99,25 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _uiUpdateTimer?.cancel();
+    _locationSubscription?.cancel();
+    _locationService.stopTracking();
     super.dispose();
   }
 
-  void _togglePause() {
+  void _togglePause() async {
     setState(() {
       _isPaused = !_isPaused;
     });
+
+    if (_isPaused) {
+      await _locationService.pauseTracking();
+    } else {
+      await _locationService.resumeTracking();
+    }
   }
 
   void _endSession() {
-    _timer?.cancel();
-
     // Navigate to summary
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -197,10 +244,34 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                       Expanded(
                         child: StatCard(
                           icon: Icons.speed,
+                          label: 'Current Speed',
+                          value: _currentSpeed.toStringAsFixed(1),
+                          unit: 'km/h',
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: StatCard(
+                          icon: Icons.flash_on,
                           label: 'Max Speed',
                           value: _maxSpeed.toStringAsFixed(1),
                           unit: 'km/h',
-                          color: Colors.orange,
+                          color: Colors.red,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: StatCard(
+                          icon: Icons.terrain,
+                          label: 'Altitude',
+                          value: _currentAltitude.toStringAsFixed(0),
+                          unit: 'm',
+                          color: Colors.green,
                         ),
                       ),
                     ],
